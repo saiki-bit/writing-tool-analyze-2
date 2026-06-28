@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>英語ライティング分析ツール</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f5f3;color:#1a1a1a;min-height:100vh;padding:2rem 1rem}
+.wrap{max-width:720px;margin:0 auto}
+h1{font-size:22px;font-weight:600;margin-bottom:4px}
+.sub{font-size:14px;color:#666;margin-bottom:1.75rem}
+.section{background:#fff;border:1px solid #e8e8e6;border-radius:12px;padding:1.25rem 1.5rem;margin-bottom:1rem}
+.section-title{font-size:12px;font-weight:600;color:#888;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.85rem}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:520px){.row2{grid-template-columns:1fr}.compare-grid{grid-template-columns:1fr!important}}
+input[type=text]{width:100%;font-size:14px;padding:9px 12px;border:1px solid #ddd;border-radius:8px;color:#1a1a1a;background:#fafaf9;outline:none}
+input[type=text]:focus{border-color:#999}
+label.lbl{font-size:13px;color:#555;display:block;margin-bottom:5px}
+.upload-area{border:2px dashed #d0d0cc;border-radius:12px;padding:1.75rem;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;background:#fafaf9;position:relative}
+.upload-area:hover,.upload-area.drag{border-color:#888;background:#fff}
+.upload-area input[type=file]{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.upload-icon{font-size:32px;margin-bottom:8px}
+.upload-label{font-size:14px;color:#666}
+.upload-label b{color:#1a1a1a}
+.preview-wrap{position:relative;display:inline-block;margin-top:1rem}
+.preview-wrap img{max-width:100%;max-height:220px;border-radius:8px;border:1px solid #e8e8e6;display:block}
+.remove-btn{position:absolute;top:-10px;right:-10px;width:24px;height:24px;border-radius:50%;background:#fff;border:1px solid #ddd;cursor:pointer;font-size:14px;display:flex;align-items:center;justify-content:center;color:#555}
+.remove-btn:hover{background:#f5f5f3}
+.analyze-btn{width:100%;padding:13px;font-size:15px;font-weight:600;background:#1a1a1a;border:none;border-radius:12px;cursor:pointer;color:#fff;margin-top:.25rem;transition:background .15s}
+.analyze-btn:hover{background:#333}
+.analyze-btn:disabled{opacity:.4;cursor:not-allowed}
+.result-box{background:#fff;border:1px solid #e8e8e6;border-radius:12px;padding:1.5rem;margin-top:1rem;display:none}
+.compare-grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.compare-col{border-radius:10px;padding:1rem;background:#fafaf9;border:1px solid #e8e8e6}
+.compare-col h3{font-size:13px;font-weight:600;margin-bottom:.75rem;color:#666}
+.score-summary{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:1.25rem}
+.score-card{text-align:center;padding:.65rem .4rem;border-radius:10px;background:#fafaf9;border:1px solid #e8e8e6}
+.sc-label{font-size:11px;color:#888;margin-bottom:3px}
+.sc-val{font-size:20px;font-weight:600;color:#1a1a1a}
+.score-card.total{grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;padding:.85rem 1.25rem;background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.score-card.total .sc-label{color:#aaa}
+.score-card.total .sc-val{font-size:26px;color:#fff}
+.criteria-list{list-style:none}
+.criteria-list li{display:flex;align-items:flex-start;gap:8px;font-size:13px;padding:5px 0;border-bottom:1px solid #f0f0ee;color:#1a1a1a;line-height:1.5}
+.criteria-list li:last-child{border-bottom:none}
+.icon-ok{color:#1D9E75;font-size:15px;flex-shrink:0;margin-top:1px}
+.icon-ng{color:#E24B4A;font-size:15px;flex-shrink:0;margin-top:1px}
+.icon-warn{color:#BA7517;font-size:15px;flex-shrink:0;margin-top:1px}
+.li-text{flex:1}
+.comment-block{margin-top:.75rem;font-size:13px;color:#555;line-height:1.6;background:#fafaf9;border-radius:8px;padding:.85rem 1rem;border:1px solid #e8e8e6}
+.cat-title{font-size:13px;font-weight:600;color:#1a1a1a;margin:.85rem 0 .4rem;padding-bottom:5px;border-bottom:1px solid #e8e8e6}
+.error-msg{font-size:13px;color:#c0392b;padding:.85rem 1rem;background:#fff5f5;border:1px solid #f5c6c6;border-radius:8px;margin-bottom:1rem;display:none}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(255,255,255,.4);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;vertical-align:-3px;margin-right:6px}
+@keyframes spin{to{transform:rotate(360deg)}}
+.tab-row{display:flex;gap:4px;margin-bottom:1rem;flex-wrap:wrap}
+.tab-btn{font-size:13px;padding:6px 14px;border:1px solid #ddd;border-radius:8px;cursor:pointer;background:#fafaf9;color:#666}
+.tab-btn.active{background:#1a1a1a;color:#fff;border-color:#1a1a1a}
+.diff-badge{font-size:11px;padding:2px 7px;border-radius:999px;margin-left:5px;font-weight:600}
+.diff-up{background:#d1fae5;color:#065f46}
+.diff-down{background:#fee2e2;color:#991b1b}
+.diff-same{background:#f3f4f6;color:#6b7280}
+.res-header{margin-bottom:1.25rem}
+.res-name{font-size:16px;font-weight:600;color:#1a1a1a;margin-bottom:2px}
+.res-topic{font-size:13px;color:#888}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>英語ライティング分析ツール</h1>
+  <p class="sub">入会時と直近のライティング画像をアップロードして自動採点・比較分析します</p>
+
+  <div class="section">
+    <div class="section-title">生徒情報</div>
+    <div class="row2">
+      <div>
+        <label class="lbl">生徒名</label>
+        <input type="text" id="studentName" placeholder="例：山田 太郎" />
+      </div>
+      <div>
+        <label class="lbl">TOPIC（任意）</label>
+        <input type="text" id="topic" placeholder="例：Should students use smartphones?" />
+      </div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📷 入会時のライティング画像</div>
+    <div class="upload-area" id="drop1"
+      ondragover="handleDrag(event,'drop1')"
+      ondragleave="handleDragLeave('drop1')"
+      ondrop="handleDrop(event,'img1','preview1','drop1')">
+      <input type="file" accept="image/*" onchange="handleFile(this,'img1','preview1','drop1')" />
+      <div class="upload-icon">📄</div>
+      <div class="upload-label"><b>クリックまたはドラッグ</b>して画像を選択</div>
+      <div class="upload-label" style="font-size:12px;margin-top:3px;color:#999">JPG / PNG / HEIC など対応</div>
+      <div class="preview-wrap" id="preview1" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="section">
+    <div class="section-title">📷 直近のライティング画像</div>
+    <div class="upload-area" id="drop2"
+      ondragover="handleDrag(event,'drop2')"
+      ondragleave="handleDragLeave('drop2')"
+      ondrop="handleDrop(event,'img2','preview2','drop2')">
+      <input type="file" accept="image/*" onchange="handleFile(this,'img2','preview2','drop2')" />
+      <div class="upload-icon">📄</div>
+      <div class="upload-label"><b>クリックまたはドラッグ</b>して画像を選択</div>
+      <div class="upload-label" style="font-size:12px;margin-top:3px;color:#999">JPG / PNG / HEIC など対応</div>
+      <div class="preview-wrap" id="preview2" style="display:none"></div>
+    </div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+  <button class="analyze-btn" id="analyzeBtn" onclick="runAnalysis()">分析する</button>
+
+  <div class="result-box" id="resultBox">
+    <div class="res-header">
+      <div class="res-name" id="resStudent"></div>
+      <div class="res-topic" id="resTopic"></div>
+    </div>
+    <div class="tab-row">
+      <button class="tab-btn active" onclick="showTab('compare')" id="tab-compare">📊 入会時 vs 直近</button>
+      <button class="tab-btn" onclick="showTab('entry')" id="tab-entry">入会時 詳細</button>
+      <button class="tab-btn" onclick="showTab('recent')" id="tab-recent">直近 詳細</button>
+    </div>
+    <div id="view-compare">
+      <div id="scoreSummary"></div>
+      <div class="compare-grid" id="compareGrid"></div>
+    </div>
+    <div id="view-entry" style="display:none"></div>
+    <div id="view-recent" style="display:none"></div>
+  </div>
+</div>
+
+<script>
+const imgData = {img1:null, img2:null};
+
+function handleDrag(e,id){e.preventDefault();document.getElementById(id).classList.add('drag');}
+function handleDragLeave(id){document.getElementById(id).classList.remove('drag');}
+function handleDrop(e,imgKey,previewId,dropId){
+  e.preventDefault();
+  document.getElementById(dropId).classList.remove('drag');
+  const file=e.dataTransfer.files[0];
+  if(file) loadImage(file,imgKey,previewId);
+}
+function handleFile(input,imgKey,previewId){
+  if(input.files[0]) loadImage(input.files[0],imgKey,previewId);
+}
+function loadImage(file,imgKey,previewId){
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const dataUrl=e.target.result;
+    const b64=dataUrl.split(',')[1];
+    const mime=file.type||'image/jpeg';
+    imgData[imgKey]={b64,mime,dataUrl};
+    const pw=document.getElementById(previewId);
+    pw.innerHTML=`<img src="${dataUrl}" alt="プレビュー"><button class="remove-btn" onclick="removeImg('${imgKey}','${previewId}')">✕</button>`;
+    pw.style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+function removeImg(imgKey,previewId){
+  imgData[imgKey]=null;
+  const pw=document.getElementById(previewId);
+  pw.innerHTML='';pw.style.display='none';
+}
+function showError(msg){const el=document.getElementById('errorMsg');el.textContent=msg;el.style.display='block';}
+function hideError(){document.getElementById('errorMsg').style.display='none';}
+
+function iconHtml(status){
+  if(status==='OK') return '<span class="icon-ok">✅</span>';
+  if(status==='NG') return '<span class="icon-ng">❌</span>';
+  return '<span class="icon-warn">⚠️</span>';
+}
+function diffBadge(val,oldVal){
+  const d=val-oldVal;
+  if(d>0) return `<span class="diff-badge diff-up">+${d}</span>`;
+  if(d<0) return `<span class="diff-badge diff-down">${d}</span>`;
+  return `<span class="diff-badge diff-same">±0</span>`;
+}
+function renderScoreSummary(d2,d1){
+  const cats=[{key:'content',label:'内容',max:6},{key:'structure',label:'構成',max:4},{key:'vocabulary',label:'語彙',max:6},{key:'grammar',label:'文法',max:10}];
+  let html='<div class="score-summary">';
+  for(const c of cats){
+    const v=d2[c.key]?.score??0,ov=d1[c.key]?.score??0;
+    html+=`<div class="score-card"><div class="sc-label">${c.label}</div><div class="sc-val">${v}<span style="font-size:13px;color:#999">/${c.max}</span>${diffBadge(v,ov)}</div></div>`;
+  }
+  const t=d2.total?.score??0,ot=d1.total?.score??0;
+  html+=`<div class="score-card total"><div class="sc-label">合計スコア</div><div class="sc-val">${t}<span style="font-size:14px;color:#aaa">/26</span>${diffBadge(t,ot)}</div></div></div>`;
+  return html;
+}
+function renderCompare(d1,d2){
+  const cats=[{key:'structure',title:'構成'},{key:'vocabulary',title:'語彙'},{key:'grammar',title:'文法'}];
+  let html='';
+  for(const [label,data] of [['入会時',d1],['直近',d2]]){
+    html+=`<div class="compare-col"><h3>${label}</h3>`;
+    for(const c of cats){
+      const cat=data[c.key];
+      html+=`<div class="cat-title" style="font-size:12px">${c.title} ${cat?.score??0}/${cat?.max??0}</div><ul class="criteria-list">`;
+      for(const item of (cat?.items||[])){
+        html+=`<li>${iconHtml(item.status)}<span class="li-text" style="font-size:12px">${item.label}</span></li>`;
+      }
+      html+='</ul>';
+    }
+    html+='</div>';
+  }
+  return html;
+}
+function renderDetail(data,label){
+  const cats=[{key:'structure',title:'構成'},{key:'vocabulary',title:'語彙'},{key:'grammar',title:'文法'}];
+  let html=`<div style="font-size:13px;font-weight:600;color:#888;margin-bottom:.85rem">${label}</div>`;
+  for(const c of cats){
+    const cat=data[c.key];
+    html+=`<div class="cat-title">${c.title}（${cat?.score??0}/${cat?.max??0}点）</div><ul class="criteria-list">`;
+    for(const item of (cat?.items||[])){
+      html+=`<li>${iconHtml(item.status)}<span class="li-text"><b>${item.label}</b>：${item.note}</span></li>`;
+    }
+    html+='</ul>';
+    if(cat?.comment) html+=`<div class="comment-block">${cat.comment}</div>`;
+  }
+  if(data.content?.comment) html+=`<div class="comment-block"><b>内容：</b>${data.content.comment}</div>`;
+  if(data.total?.overall_comment) html+=`<div class="comment-block" style="margin-top:.5rem"><b>総評：</b>${data.total.overall_comment}</div>`;
+  return html;
+}
+function showTab(name){
+  ['compare','entry','recent'].forEach(t=>{
+    document.getElementById('view-'+t).style.display=t===name?'block':'none';
+    document.getElementById('tab-'+t).classList.toggle('active',t===name);
+  });
+}
+
+async function runAnalysis(){
+  hideError();
+  const topic=document.getElementById('topic').value.trim();
+  const student=document.getElementById('studentName').value.trim();
+
+  if(!imgData.img1){showError('❌ 入会時のライティング画像をアップロードしてください。');return;}
+  if(!imgData.img2){showError('❌ 直近のライティング画像をアップロードしてください。');return;}
+
+  const btn=document.getElementById('analyzeBtn');
+  btn.disabled=true;
+  btn.innerHTML='<span class="spinner"></span>画像を読み取り・分析中...（30〜60秒ほどかかります）';
+  document.getElementById('resultBox').style.display='none';
+
+  try{
+    const res = await fetch('/api/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        image1: imgData.img1.b64,
+        mime1: imgData.img1.mime,
+        image2: imgData.img2.b64,
+        mime2: imgData.img2.mime,
+        topic
+      })
+    });
+
+    const data = await res.json();
+    if(!res.ok) throw new Error(data.error || 'サーバーエラーが発生しました');
+
+    const {entry: d1, recent: d2} = data;
+
+    document.getElementById('resStudent').textContent=student?`📋 ${student} の分析結果`:'📋 分析結果';
+    document.getElementById('resTopic').textContent=topic?`TOPIC: ${topic}`:'';
+    document.getElementById('scoreSummary').innerHTML=renderScoreSummary(d2,d1);
+    document.getElementById('compareGrid').innerHTML=renderCompare(d1,d2);
+    document.getElementById('view-entry').innerHTML=renderDetail(d1,'入会時');
+    document.getElementById('view-recent').innerHTML=renderDetail(d2,'直近');
+
+    showTab('compare');
+    document.getElementById('resultBox').style.display='block';
+    document.getElementById('resultBox').scrollIntoView({behavior:'smooth',block:'start'});
+  }catch(e){
+    showError('エラー：'+e.message);
+  }finally{
+    btn.disabled=false;
+    btn.innerHTML='分析する';
+  }
+}
+</script>
+</body>
+</html>
