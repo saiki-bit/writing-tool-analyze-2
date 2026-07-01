@@ -2,18 +2,18 @@ export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method not allowed' });
   }
-
+ 
   const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return res.status(500).json({ error: 'APIキーが設定されていません' });
   }
-
+ 
   try {
     const { image1, mime1, image2, mime2, topic } = req.body;
-
+ 
     const prompt = (topic) => `あなたは英語ライティングの採点専門家です。画像内のライティングを読み取り、以下の評価項目で厳密に採点してください。
 TOPIC: ${topic || '（未指定）'}
-
+ 
 必ずこのJSONフォーマットのみで返答してください（前置きや説明は一切不要）:
 {
   "structure": {
@@ -67,9 +67,9 @@ TOPIC: ${topic || '（未指定）'}
   "total": {"score": 26,"max": 26,"overall_comment": "..."}
 }
 statusの値は必ず "OK", "NG", "WARN" のいずれかにしてください。scoreは実際の評価に基づいた整数にしてください。`;
-
+ 
     const callGemini = async (b64, mime, topic) => {
-      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+      const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=${apiKey}`;
       const body = {
         contents: [{ parts: [
           { inline_data: { mime_type: mime, data: b64 } },
@@ -89,22 +89,22 @@ statusの値は必ず "OK", "NG", "WARN" のいずれかにしてください。
       const d = await r.json();
       return d.candidates?.[0]?.content?.parts?.[0]?.text || '';
     };
-
+ 
     const [raw1, raw2] = await Promise.all([
       callGemini(image1, mime1, topic),
       callGemini(image2, mime2, topic)
     ]);
-
+ 
     const parse = (raw) => {
       const clean = raw.replace(/```json/g, '').replace(/```/g, '').trim();
       return JSON.parse(clean);
     };
-
+ 
     res.status(200).json({
       entry: parse(raw1),
       recent: parse(raw2)
     });
-
+ 
   } catch (e) {
     res.status(500).json({ error: e.message });
   }
