@@ -69,7 +69,7 @@ TOPIC: ${topic || '（未指定）'}
 statusの値は必ず "OK", "NG", "WARN" のいずれかにしてください。scoreは実際の評価に基づいた整数にしてください。`;
  
     const callGemini = async (b64, mime, topic) => {
-https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-05-20:generateContent?key=${apiKey}
+https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${apiKey}
       const body = {
         contents: [{ parts: [
           { inline_data: { mime_type: mime, data: b64 } },
